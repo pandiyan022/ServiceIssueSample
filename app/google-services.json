@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "464497842382",
+    "project_id": "sampebapp",
+    "storage_bucket": "sampebapp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:464497842382:android:b26ca9c832e0d35387d89f",
+        "android_client_info": {
+          "package_name": "background.location.service"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "464497842382-5inc60siqnjc6tcp2kbg9499jh4j9eo7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "background.location.service",
+            "certificate_hash": "abb86676cdc60389a426d0c50b12c1225c1f93d1"
+          }
+        },
+        {
+          "client_id": "464497842382-0510r4u8avekrn2ilrvhrovqje18v5v4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCU3ggRdTEBjBdHK01msFOeP9w9HR5r7Hs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "464497842382-0510r4u8avekrn2ilrvhrovqje18v5v4.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
