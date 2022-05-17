@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Log;
 
+import androidx.core.content.ContextCompat;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
 
@@ -23,5 +24,9 @@ public class MyReceiver extends BroadcastReceiver {
         OneTimeWorkRequest startServiceRequest = new OneTimeWorkRequest.Builder(MyWorker.class)
                 .build();
         workManager.enqueue(startServiceRequest);
+        if(!MyService.isServiceRunning) {
+            Intent serviceIntent = new Intent(context, MyService.class);
+            ContextCompat.startForegroundService(context, serviceIntent);
+        }
     }
 }

@@ -1,13 +1,23 @@
 package background.location.service;
+
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.PixelFormat;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
 
 import androidx.core.app.NotificationCompat;
 
@@ -15,6 +25,11 @@ public class MyService extends Service {
     private String TAG = "MyService";
     public static boolean isServiceRunning;
     private String CHANNEL_ID = "NOTIFICATION_CHANNEL";
+
+    /**********************/
+    private WindowManager windowManager = null;
+    /**********************/
+
 
     public MyService() {
         Log.d(TAG, "constructor called");
@@ -27,6 +42,7 @@ public class MyService extends Service {
         Log.d(TAG, "onCreate called");
         createNotificationChannel();
         isServiceRunning = true;
+
     }
 
     @Override
@@ -49,6 +65,11 @@ public class MyService extends Service {
                 .build();
 
         startForeground(1, notification);
+        if (windowManager == null) {
+            windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
+        }
+        CustomWindow window=new CustomWindow(this);
+        window.open();
         return START_STICKY;
     }
 

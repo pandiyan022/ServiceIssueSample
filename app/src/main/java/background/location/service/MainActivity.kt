@@ -30,6 +30,9 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.WorkManager
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
 import android.view.View
 
 import androidx.core.content.ContextCompat
@@ -62,22 +65,38 @@ public class MainActivity : AppCompatActivity() {
                 .setAction("Action", null).show()
         }
         requestLocation(this)
+        if (!checkHasDrawOverlayPermissions()) {
+            navigateDrawPermissionSetting()
+        }
     }
 
+    private fun navigateDrawPermissionSetting() {
+        val myIntent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+        startActivity(myIntent)
+    }
 
+    private fun checkHasDrawOverlayPermissions(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Settings.canDrawOverlays(this)
+        } else {
+            true
+        }
+    }
 
     val locationRequest = LocationRequest.create()?.apply {
         interval = 10000
         fastestInterval = 5000
         priority = LocationRequest.PRIORITY_HIGH_ACCURACY
     }
+
     /**
      * Permissions required to access location.
      */
     val PERMISSIONS_LOCATION = arrayOf(
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        )
+        Manifest.permission.ACCESS_COARSE_LOCATION,
+        Manifest.permission.ACCESS_FINE_LOCATION
+    )
+
     /**
      * Id to identify a location permission request.
      */
@@ -97,6 +116,7 @@ public class MainActivity : AppCompatActivity() {
             startServiceViaWorker()
         }
     }
+
     /**
      * Fused locaiton api to initialize the location services
      * */
@@ -134,19 +154,25 @@ public class MainActivity : AppCompatActivity() {
         )
         startService()
     }
-    companion object{
-        public val LATITUDE="LATITUDE"
-        public val LONGITUDE="LONGITUDE"
-        public val MESSAGE_STATUS="MESSAGE_STATUS"
-        public val WORK_RESULT="WORK_RESULT"
+
+    companion object {
+        public val LATITUDE = "LATITUDE"
+        public val LONGITUDE = "LONGITUDE"
+        public val MESSAGE_STATUS = "MESSAGE_STATUS"
+        public val WORK_RESULT = "WORK_RESULT"
+
+        const val ACTION_STOP_FOREGROUND = "${BuildConfig.APPLICATION_ID}.stopfloating.service"
+        const val REQUEST_CODE_DRAW_PREMISSION = 2
     }
-    var wkmgr:WorkManager? = null;
-    var cTime:Long=0
+
+    var wkmgr: WorkManager? = null;
+    var cTime: Long = 0
+
     /**https://localcoder.org/execute-task-every-second-using-work-manager-api
      * */
-    public fun send(lastLocation:Location){
+    public fun send(lastLocation: Location) {
         startService()
-        val powerConstraint = Constraints.Builder().setRequiresCharging(true).build()
+        val powerConstraint = Constraints.Builder()/*.setRequiresCharging(true)*/.build()
         val taskData = Data.Builder()
             .putString(MainActivity.LATITUDE, lastLocation.latitude.toString())
             .putString(MainActivity.LONGITUDE, lastLocation.longitude.toString())
@@ -156,9 +182,13 @@ public class MainActivity : AppCompatActivity() {
         WorkManager.getInstance(this).enqueue(request)
 
     }
-    var lastUpdate=System.currentTimeMillis()
+
+    var lastUpdate = System.currentTimeMillis()
     fun AppCompatActivity.isPermissionGranted(permission: String) =
-        ActivityCompat.checkSelfPermission(this, permission) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        ActivityCompat.checkSelfPermission(
+            this,
+            permission
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -185,13 +215,25 @@ public class MainActivity : AppCompatActivity() {
     }
 
     fun stopService() {
-        Log.d(TAG, "stopService called")
+        Log.d(TAG, "stopService called"+"=== Service Running("+MyService.isServiceRunning+")")
         if (MyService.isServiceRunning) {
             val serviceIntent = Intent(this, MyService::class.java)
             stopService(serviceIntent)
+            if(Build.VERSION.SDK_INT > Build.VERSION_CODES.Q){
+                MyService.isServiceRunning=false;
+                val broadcastIntent = Intent(this, MyReceiver::class.java)
+                sendBroadcast(broadcastIntent)
+            }
+        }else {
+            // call MyReceiver which will restart this service via a worker
+
+            // call MyReceiver which will restart this service via a worker
+            val broadcastIntent = Intent(this, MyReceiver::class.java)
+            sendBroadcast(broadcastIntent)
         }
     }
-    val TAG="keyss"
+
+    val TAG = "keyss"
     fun startServiceViaWorker() {
         Log.d(TAG, "startServiceViaWorker called")
         val UNIQUE_WORK_NAME = "StartMyServiceViaWorker"
@@ -216,7 +258,6 @@ public class MainActivity : AppCompatActivity() {
     }
 
     /*********************************************************/
-
 
 
 }
