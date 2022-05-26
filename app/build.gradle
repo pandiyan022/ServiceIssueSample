@@ -52,6 +52,13 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.android.gms:play-services-location:19.0.0'
     implementation 'androidx.work:work-multiprocess:2.7.1'
+    implementation 'androidx.lifecycle:lifecycle-process:2.4.1'
+
+    //Coroutine
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.3.9'
+
+    //https://github.com/facebookarchive/network-connection-class
+    implementation 'com.facebook.network.connectionclass:connectionclass:1.0.1'
 
     def work_version = "2.7.1"
 /*

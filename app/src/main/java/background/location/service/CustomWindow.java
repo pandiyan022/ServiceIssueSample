@@ -12,7 +12,10 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-
+/**
+ * https://stackoverflow.com/questions/20015197/internet-connection-paused-after-android-phone-lock
+ * WIFI lock
+ * */
 public class CustomWindow {
     private Context context;
     private View mView;

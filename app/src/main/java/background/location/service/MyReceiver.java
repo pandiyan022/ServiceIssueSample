@@ -24,9 +24,12 @@ public class MyReceiver extends BroadcastReceiver {
         OneTimeWorkRequest startServiceRequest = new OneTimeWorkRequest.Builder(MyWorker.class)
                 .build();
         workManager.enqueue(startServiceRequest);
-        if(!MyService.isServiceRunning) {
+//        if(!MyService.isServiceRunning) {
             Intent serviceIntent = new Intent(context, MyService.class);
             ContextCompat.startForegroundService(context, serviceIntent);
-        }
+//        }
     }
+    /**
+     * https://www.zoftino.com/android-job-scheduler-example#:~:text=To%20schedule%20a%20job%2C%20first,getSystemService(JOB_SCHEDULER_SERVICE)%3B
+     * */
 }

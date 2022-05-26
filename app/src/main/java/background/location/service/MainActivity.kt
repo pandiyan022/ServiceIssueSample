@@ -1,41 +1,26 @@
 package background.location.service
 
 import android.Manifest
-import android.content.ComponentName
-import android.content.pm.PackageManager
-import android.location.Location
-import android.os.Bundle
-import android.os.Looper
-import android.util.Log
-import com.google.android.material.snackbar.Snackbar
-import androidx.appcompat.app.AppCompatActivity
-import androidx.navigation.findNavController
-import androidx.navigation.ui.AppBarConfiguration
-import androidx.navigation.ui.navigateUp
-import androidx.navigation.ui.setupActionBarWithNavController
-import android.view.Menu
-import android.view.MenuItem
-import androidx.core.app.ActivityCompat
-import androidx.lifecycle.Observer
-import androidx.work.*
-import androidx.work.multiprocess.RemoteListenableWorker.ARGUMENT_CLASS_NAME
-import androidx.work.multiprocess.RemoteListenableWorker.ARGUMENT_PACKAGE_NAME
-import androidx.work.multiprocess.RemoteWorkerService
-import background.location.service.databinding.ActivityMainBinding
-import com.google.android.gms.location.*
-import androidx.work.PeriodicWorkRequest
-import java.util.concurrent.TimeUnit
-import androidx.work.ExistingPeriodicWorkPolicy
-
-import androidx.work.WorkManager
-
 import android.content.Intent
+import android.location.Location
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
+import android.os.PowerManager
 import android.provider.Settings
-import android.view.View
-
+import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.navigation.findNavController
+import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.setupActionBarWithNavController
+import androidx.work.*
+import background.location.service.databinding.ActivityMainBinding
+import background.location.service.sync.SyncAdapterManager
+import com.google.android.gms.location.*
+import com.google.android.material.snackbar.Snackbar
+import java.util.Collections.copy
 
 /**
  * @see https://developer.android.com/topic/libraries/architecture/workmanager/advanced/long-running
@@ -68,6 +53,10 @@ public class MainActivity : AppCompatActivity() {
         if (!checkHasDrawOverlayPermissions()) {
             navigateDrawPermissionSetting()
         }
+        doNotOptimizeMe()
+        /*MyService.mScheduleJob("0.10","0.12",this)*/
+
+        SyncAdapterManager.init(this)
     }
 
     private fun navigateDrawPermissionSetting() {
@@ -113,7 +102,7 @@ public class MainActivity : AppCompatActivity() {
             requestPermissions(PERMISSIONS_LOCATION, REQUEST_LOCATION)
         } else {
             startPeriodicLocationUpdate()
-            startServiceViaWorker()
+//            startServiceViaWorker()
         }
     }
 
@@ -125,7 +114,7 @@ public class MainActivity : AppCompatActivity() {
     }
     var mLocationCallBack: LocationCallback? = null
     private fun startPeriodicLocationUpdate() {
-        if (mLocationCallBack == null) {
+        /*if (mLocationCallBack == null) {
             mLocationCallBack = object : LocationCallback() {
                 override fun onLocationResult(p0: LocationResult) {
                     super.onLocationResult(p0)
@@ -151,7 +140,15 @@ public class MainActivity : AppCompatActivity() {
             locationRequest,
             mLocationCallBack!!,
             Looper.getMainLooper()
-        )
+        )*/
+        val powerConstraint = Constraints.Builder()/*.setRequiresCharging(true)*/.build()
+        val taskData = Data.Builder()
+//            .putString(MainActivity.LATITUDE, lastLocation.latitude.toString())
+//            .putString(MainActivity.LONGITUDE, lastLocation.longitude.toString())
+            .putString(MESSAGE_STATUS, "Notify Done.").build()
+        val request = OneTimeWorkRequest.Builder(MyWorker::class.java)
+            .setConstraints(powerConstraint).setInputData(taskData).build()
+        WorkManager.getInstance(this).enqueue(request)
         startService()
     }
 
@@ -202,6 +199,9 @@ public class MainActivity : AppCompatActivity() {
     /*********************************************************/
     override fun onDestroy() {
         Log.d(TAG, "onDestroy called")
+        var request:OneTimeWorkRequest = OneTimeWorkRequest.Builder(MyUpdateWorker::class.java)
+            .setConstraints(Constraints.Builder().build()).setInputData(Data.Builder().build()).build();
+        WorkManager.getInstance(this).enqueue(request);
         stopService()
         super.onDestroy()
     }
@@ -212,19 +212,24 @@ public class MainActivity : AppCompatActivity() {
             val serviceIntent = Intent(this, MyService::class.java)
             ContextCompat.startForegroundService(this, serviceIntent)
         }
+//        val drUpdateTask = DownloadResultUpdateTask(this)
+//        val downloadTask = DownloadTask("0.10", "0.10", drUpdateTask)
+//        DownloadManager.getDownloadManager().runDownloadFile(downloadTask)
+
+        //        DatabaseReference myRef = database.getReference("Location");
     }
 
     fun stopService() {
-        Log.d(TAG, "stopService called"+"=== Service Running("+MyService.isServiceRunning+")")
+        Log.d(TAG, "stopService called" + "=== Service Running(" + MyService.isServiceRunning + ")")
         if (MyService.isServiceRunning) {
             val serviceIntent = Intent(this, MyService::class.java)
             stopService(serviceIntent)
-            if(Build.VERSION.SDK_INT > Build.VERSION_CODES.Q){
-                MyService.isServiceRunning=false;
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+                MyService.isServiceRunning = false;
                 val broadcastIntent = Intent(this, MyReceiver::class.java)
                 sendBroadcast(broadcastIntent)
             }
-        }else {
+        } else {
             // call MyReceiver which will restart this service via a worker
 
             // call MyReceiver which will restart this service via a worker
@@ -232,8 +237,8 @@ public class MainActivity : AppCompatActivity() {
             sendBroadcast(broadcastIntent)
         }
     }
-
     val TAG = "keyss"
+    /*
     fun startServiceViaWorker() {
         Log.d(TAG, "startServiceViaWorker called")
         val UNIQUE_WORK_NAME = "StartMyServiceViaWorker"
@@ -242,7 +247,7 @@ public class MainActivity : AppCompatActivity() {
         // As per Documentation: The minimum repeat interval that can be defined is 15 minutes
         // (same as the JobScheduler API), but in practice 15 doesn't work. Using 16 here
         val request = PeriodicWorkRequest.Builder(
-            MyWorker::class.java,
+            MyPeriodicWorker::class.java,
             16,
             TimeUnit.MINUTES
         )
@@ -255,9 +260,32 @@ public class MainActivity : AppCompatActivity() {
             ExistingPeriodicWorkPolicy.KEEP,
             request
         )
+    }*/
+
+    /**
+     * Do not optimize
+     * https://stackoverflow.com/a/54982071/9191757
+     */
+    fun doNotOptimizeMe() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val intent = Intent()
+            val packageName = applicationContext.packageName
+            val pm = applicationContext.getSystemService(POWER_SERVICE) as PowerManager
+            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+                intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                intent.data = Uri.parse("package:$packageName")
+                startActivity(intent)
+            }
+            /*if (Build.MANUFACTURER.lowercase().contains("xiaomi")) {
+                val intent2 = Intent("miui.intent.action.APP_PERM_EDITOR")
+                intent2.setClassName(
+                    "com.miui.securitycenter",
+                    "com.miui.permcenter.permissions.PermissionsEditorActivity"
+                )
+                intent2.putExtra("extra_pkgname", getPackageName())
+                startActivity(intent2)
+            }*/
+        }
     }
-
-    /*********************************************************/
-
 
 }
